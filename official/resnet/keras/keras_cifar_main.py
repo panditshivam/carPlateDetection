@@ -20,6 +20,7 @@ from __future__ import print_function
 
 from absl import app as absl_app
 from absl import flags
+import contextlib
 import tensorflow as tf  # pylint: disable=g-bad-import-order
 
 from official.resnet import cifar10_main as cifar_main
@@ -170,18 +171,28 @@ def run(flags_obj):
     num_eval_steps = None
     validation_data = None
 
-  history = model.fit(train_input_dataset,
-                      epochs=train_epochs,
-                      steps_per_epoch=train_steps,
-                      callbacks=[
-                          time_callback,
-                          lr_callback,
-                          tensorboard_callback
-                      ],
-                      validation_steps=num_eval_steps,
-                      validation_data=validation_data,
-                      validation_freq=flags_obj.epochs_between_evals,
-                      verbose=2)
+  @contextlib.contextmanager
+  def dummy_context_mgr():
+    yield None
+
+  context_mgr = dummy_context_mgr
+  if flags_obj.experimental_jit_scope:
+    context_mgr = tf.contrib.compiler.jit.experimental_jit_scope
+
+  with context_mgr():
+    history = model.fit(train_input_dataset,
+                        epochs=train_epochs,
+                        steps_per_epoch=train_steps,
+                        callbacks=[
+                            time_callback,
+                            lr_callback,
+                            tensorboard_callback
+                        ],
+                        validation_steps=num_eval_steps,
+                        validation_data=validation_data,
+                        validation_freq=flags_obj.epochs_between_evals,
+                        verbose=2)
+
   eval_output = None
   if not flags_obj.skip_eval:
     eval_output = model.evaluate(eval_input_dataset,

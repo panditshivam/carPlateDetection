@@ -201,6 +201,8 @@ def define_keras_flags():
       help='For every log_steps, we log the timing information such as '
       'examples per second. Besides, for every log_steps, we store the '
       'timestamp of a batch end.')
+  flags.DEFINE_boolean(name='experimental_jit_scope', default=False,
+                       help='Enable XLA using experimental jit scope.')
 
 
 def get_synth_input_fn(height, width, num_channels, num_classes,
